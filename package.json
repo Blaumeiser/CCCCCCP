@@ -1,0 +1,13 @@
+{
+  "type": "module",
+  "dependencies": {
+    "rfc6902": "^5.0.1",
+    "ws": "^8.5.0"
+  },
+  "optionalDependencies": {
+    "utf-8-validate": "^5.0.9"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.3"
+  }
+}
