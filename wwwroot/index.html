@@ -110,7 +110,9 @@
       let ws;
       function startWs() {
         if (!!ws) ws.close();
-        ws = new WebSocket("ws://" + window.location.hostname + ":8080");
+        // const wsurl = "ws"+(window.location.protocol==='http:'?'':'s')+"://" + window.location.hostname + ":8080";
+        const wsurl = "wss://8080-blaumeiser-ccccccp-p51we4iy2cc.ws-eu51.gitpod.io/";
+        ws = new WebSocket(wsurl);
         ws.onmessage = (msg) => {
           const patch = JSON.parse(msg.data);
           if (patch.diff) {
