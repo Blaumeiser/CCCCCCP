@@ -76,13 +76,12 @@
           "https://upload.wikimedia.org/wikipedia/commons/a/a3/Indian_Election_Symbol_Pineapple.png";
         pineappleImg.onload = function () {
           for (let pineapple of data.pineapples) {
-            
             objs.ctx.drawImage(
               pineappleImg,
               (pineapple[0] - size / 2) * objs.size,
               (pineapple[1] - size / 2) * objs.size,
               size * objs.size,
-              size * 1.5*objs.size
+              size * 1.5 * objs.size
             );
           }
         };
@@ -111,8 +110,7 @@
       let ws;
       function startWs() {
         if (!!ws) ws.close();
-        //ws = new WebSocket("ws://localhost:8080/");
-        ws = new WebSocket("wss://8080-blaumeiser-ccccccp-p51we4iy2cc.ws-eu51.gitpod.io/");
+        ws = new WebSocket("ws://" + window.location.hostname + ":8080");
         ws.onmessage = (msg) => {
           const patch = JSON.parse(msg.data);
           if (patch.diff) {
