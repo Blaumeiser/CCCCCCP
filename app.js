@@ -1,48 +1,57 @@
 import { WebSocketServer, WebSocket } from "ws";
 import rfc6902 from "rfc6902";
 
-const squads = [
-  {
-    name: "Special-Project-Squad",
-    coders: [
-      {
-        avatar:
-          "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
-      },
-      {
-        avatar:
-          "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
-      },
-      {
-        avatar:
-          "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
-      },
-    ],
-  },
-  {
-    name: "VX",
-    coders: [
-      {
-        avatar:
-          "https://www.pngkit.com/png/full/435-4356701_minus-frog-crafts-pond-life-gifs-kermit-the.png",
-      },
-      {
-        avatar:
-          "https://www.pngkit.com/png/full/435-4356701_minus-frog-crafts-pond-life-gifs-kermit-the.png",
-      },
-    ],
-  },
-  {
-    name: "Aporia",
-    coders: [
-      {
-        avatar:
-          "https://static.vecteezy.com/system/resources/thumbnails/000/242/794/small_2x/girl-with-wavy-hair-and-glasses.jpg",
-        avatarSize: 0.02,
-      },
-    ],
-  },
-];
+const root = {
+  freq: 250,
+  segfault: 1000 * 10,
+  squads: [
+    {
+      name: "Special-Project-Squad",
+      coders: [
+        {
+          avatar:
+            "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
+        },
+        {
+          avatar:
+            "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
+        },
+        {
+          avatar:
+            "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
+        },
+      ],
+    },
+    {
+      name: "VX",
+      coders: [
+        {
+          avatar:
+            "https://www.pngkit.com/png/full/435-4356701_minus-frog-crafts-pond-life-gifs-kermit-the.png",
+        },
+        {
+          avatar:
+            "https://www.pngkit.com/png/full/435-4356701_minus-frog-crafts-pond-life-gifs-kermit-the.png",
+        },
+      ],
+    },
+    {
+      name: "Aporia",
+      coders: [
+        {
+          avatar:
+            "https://static.vecteezy.com/system/resources/thumbnails/000/242/794/small_2x/girl-with-wavy-hair-and-glasses.jpg",
+          avatarSize: 0.02,
+        },
+      ],
+    },
+  ],
+  pineapples: [
+    [Math.random(), Math.random() * 0.5],
+    [Math.random(), Math.random() * 0.5],
+    [Math.random(), Math.random() * 0.5],
+  ],
+};
 
 function newCoder(avatar) {
   return {
@@ -58,10 +67,10 @@ function newCoder(avatar) {
 
 let data = {};
 function restart() {
+  data = JSON.parse(JSON.stringify(root));
   data.head = new Date().toISOString();
-  data.squads = JSON.parse(JSON.stringify(squads));
   data.squads.forEach((squad) => (squad.coders = squad.coders.map(newCoder)));
-
+  data.pineapples = data.pineapples.map(() => [Math.random(), Math.random()]);
   const json = JSON.stringify({ full: data });
   wss.clients.forEach(function each(client) {
     if (client.readyState === WebSocket.OPEN) {
@@ -81,13 +90,24 @@ function sendData(ws) {
 }
 
 function sendUpdates() {
-  data.head = new Date().toISOString();
   let diff = [];
 
+  data.head = new Date().toISOString();
   diff.push({
     op: "replace",
     path: "/head",
     value: data.head,
+  });
+
+  data.segfault -= data.freq;
+  if (data.segfault <= 0) {
+    restart();
+  }
+
+  diff.push({
+    op: "replace",
+    path: "/segfault",
+    value: data.segfault,
   });
 
   function moveCoder(squadId, coderId, coder) {
@@ -133,5 +153,4 @@ function right(coder, angle) {
 }
 
 restart();
-//setInterval(restart, 10000);
-setInterval(sendUpdates, 250);
+setInterval(sendUpdates, data.freq);

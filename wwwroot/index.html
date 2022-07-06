@@ -20,13 +20,15 @@
         const ctx = objs.ctx;
         const fontSize = objs.size / 75;
         ctx.font = fontSize + "px monospace";
-        const txt = data.head || "";
+        const txt = `${data.head || ""} segfaulting: ${Math.trunc(
+          data.segfault
+        )} ms`;
         var textSize = ctx.measureText(txt);
         ctx.clearRect(
           objs.headOffset,
           0,
           textSize.width + objs.size / 2500,
-          textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent
+          textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent + 1
         );
         ctx.fillText(txt, objs.headOffset, fontSize);
         objs.headOffset -= objs.size / 2500;
@@ -37,21 +39,25 @@
       }
 
       function draw() {
-        const ctx = objs.ctx;
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        objs.ctx.clearRect(0, 0, objs.ctx.canvas.width, objs.ctx.canvas.height);
+        drawCoders();
+        drawPineapples();
+        drawLogo();
+      }
+      function drawCoders() {
         for (let squad of data.squads) {
           for (let coder of squad.coders) {
             let lastPoint = coder.points.at(-1);
-            ctx.strokeStyle = coder.color;
-            ctx.beginPath();
+            objs.ctx.strokeStyle = coder.color;
+            objs.ctx.beginPath();
             for (let point of coder.points) {
-              ctx.lineTo(point[0] * objs.size, point[1] * objs.size);
+              objs.ctx.lineTo(point[0] * objs.size, point[1] * objs.size);
             }
-            ctx.stroke();
+            objs.ctx.stroke();
 
             const img = new Image(data.avatarSize, data.avatarSize);
             img.onload = function () {
-              ctx.drawImage(
+              objs.ctx.drawImage(
                 img,
                 (lastPoint[0] - coder.avatarSize / 2) * objs.size,
                 (lastPoint[1] - coder.avatarSize / 2) * objs.size,
@@ -62,7 +68,24 @@
             img.src = coder.avatar;
           }
         }
-        drawLogo();
+      }
+      function drawPineapples() {
+        const size = 0.02;
+        const pineappleImg = new Image(size * objs.size, size * objs.size);
+        pineappleImg.src =
+          "https://upload.wikimedia.org/wikipedia/commons/a/a3/Indian_Election_Symbol_Pineapple.png";
+        pineappleImg.onload = function () {
+          for (let pineapple of data.pineapples) {
+            
+            objs.ctx.drawImage(
+              pineappleImg,
+              (pineapple[0] - size / 2) * objs.size,
+              (pineapple[1] - size / 2) * objs.size,
+              size * objs.size,
+              size * 1.5*objs.size
+            );
+          }
+        };
       }
       function drawLogo() {
         const ctx = objs.ctx;
