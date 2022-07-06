@@ -1,5 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import rfc6902 from "rfc6902";
+import serve  from "./serve.js"
 
 const root = {
   freq: 250,
@@ -152,5 +153,6 @@ function right(coder, angle) {
   coder.dir += angle * (Math.PI / 180);
 }
 
+serve();
 restart();
 setInterval(sendUpdates, data.freq);
