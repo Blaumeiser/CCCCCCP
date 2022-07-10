@@ -76,12 +76,14 @@
           "https://upload.wikimedia.org/wikipedia/commons/a/a3/Indian_Election_Symbol_Pineapple.png";
         pineappleImg.onload = function () {
           for (let pineapple of data.pineapples) {
+              const x = (pineapple[0] - size / 2) * objs.size;
+              const y = (pineapple[1] - size / 2) * objs.size;
             objs.ctx.drawImage(
               pineappleImg,
-              (pineapple[0] - size / 2) * objs.size,
-              (pineapple[1] - size / 2) * objs.size,
+              x,
+              y,
               size * objs.size,
-              size * 1.5 * objs.size
+              size * 1.3 * objs.size
             );
           }
         };
@@ -110,8 +112,13 @@
       let ws;
       function startWs() {
         if (!!ws) ws.close();
-        // const wsurl = "ws"+(window.location.protocol==='http:'?'':'s')+"://" + window.location.hostname + ":8080";
-        const wsurl = "wss://8080-blaumeiser-ccccccp-p51we4iy2cc.ws-eu51.gitpod.io/";
+        const wsurl =
+          "ws" +
+          (window.location.protocol === "http:" ? "" : "s") +
+          "://" +
+          window.location.hostname +
+          ":8080";
+        //const wsurl = "wss://8080-blaumeiser-ccccccp-p51we4iy2cc.ws-eu51.gitpod.io/";
         ws = new WebSocket(wsurl);
         ws.onmessage = (msg) => {
           const patch = JSON.parse(msg.data);
