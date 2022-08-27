@@ -34,8 +34,21 @@ function handleGet(req, res) {
   });
 }
 
-function handlePost(req, res) {
-  res.end('{}');
+async function handlePost(req, res) {
+  const buffers = [];
+  for await (const chunk of req) {
+    buffers.push(chunk);
+  }
+  const json = Buffer.concat(buffers).toString();
+  const obj = JSON.parse(json);
+  //console.log(obj);
+  const ownSquad = obj.squads.find(s => s.name==='Special-Projects-Squad');
+  const turns = ownSquad.coders.map(c=>( {
+    name: c.name,
+    turn: Math.random()*Math.PI/10
+  }));
+  const retJson = JSON.stringify();
+  res.end(retJson);
 }
 
 export default function serve() {

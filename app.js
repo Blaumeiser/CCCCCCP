@@ -9,7 +9,7 @@ const root = {
   segfault: 1000 * 10 * 6,
   squads: [
     {
-      name: "Special-Project-Squad",
+      name: "Special-Projects-Squad",
       coders: [
         {
           avatar:
@@ -26,7 +26,7 @@ const root1 = {
   segfault: 1000 * 10 * 6,
   squads: [
     {
-      name: "Special-Project-Squad",
+      name: "Special-Projects-Squad",
       coders: [
         {
           avatar:
@@ -181,25 +181,25 @@ function sendUpdates() {
   };
     const url = new URL("https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io");
 
-    const request = https.request(url, options, (res) => {
-      let data = '';
-
-      console.log('Status Code:', res.statusCode);
-  
-      res.on('data', (chunk) => {
-          data += chunk;
-      });
-  
-      res.on('end', () => {
-        if (data.length)
-          console.log('Body: ', JSON.parse(data));
-      });
+    const request = https.request(url, options, async (res) => {
+      const buffers = [];
+      for await (const chunk of res) {
+        buffers.push(chunk);
+      }
+      const json = Buffer.concat(buffers).toString();
+      if (json.length) {
+        const obj  = JSON.parse(json);
+        obj.forEach(t => {
+         // const coders = data.squads.map(s=>s.coders);
+        });
+        console.log(obj);
+      }
     });
     request.on('timeout', () => {
       request.destroy();
   });
   request.on('error', (e) => {
-       console.error(e);
+       // console.error(e);
     })
     request.write(json);
     request.end();
