@@ -1,4 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
+import https from 'node:https';
 import serve from "./serve.js";
 import test from "./test.js";
 //test();
@@ -160,12 +161,53 @@ function sendUpdates() {
     });
   }
 
-  function moveCoders() {
+  function moveCodersLocal(board) {
     for (let i = 0; i < data.squads.length; i++) {
       for (let j = 0; j < data.squads[i].coders.length; j++) {
         moveCoder(i, j);
       }
     }
+  }
+
+  function moveCodersRemote(board) {
+    const json = JSON.stringify(board);
+    const options = {
+      method: 'POST',
+      timeout: 3000,
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(json)
+     }
+  };
+    const url = new URL("https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io");
+
+    const request = https.request(url, options, (res) => {
+      let data = '';
+
+      console.log('Status Code:', res.statusCode);
+  
+      res.on('data', (chunk) => {
+          data += chunk;
+      });
+  
+      res.on('end', () => {
+        if (data.length)
+          console.log('Body: ', JSON.parse(data));
+      });
+    });
+    request.on('timeout', () => {
+      request.destroy();
+  });
+  request.on('error', (e) => {
+       console.error(e);
+    })
+    request.write(json);
+    request.end();
+  }
+
+  function moveCoders(board) {
+    moveCodersLocal(board);
+    moveCodersRemote(board);
   }
 
   function spawnPineapple() {
@@ -221,7 +263,21 @@ function sendUpdates() {
     }
   }
 
-  moveCoders();
+  function getPublicBoardState() {
+    let obj = {};
+    obj.squads = data.squads.map(squad => ( {
+      name: squad.name,
+      coders : squad.coders.map(coder => ({
+        name: coder.name,
+        point: coder.points.slice(-1)[0],
+        direction: coder.direction
+      }))
+    }));
+    return obj;
+  }
+
+  const board = getPublicBoardState();
+  moveCoders(board);
   checkCaptures();
   //spawnPineapple();
 
