@@ -74,6 +74,7 @@ const root1 = {
 
 function newCoder(avatar) {
   return {
+    name: ""+ (Math.random()*(1<<24) | 0).toString(10),
     avatarSize: 0.01,
     //points: [[Math.random(), Math.random() * 0.25]],
     points: [[0.1, 0.1]],
