@@ -45,12 +45,12 @@
         drawLogo();
       }
       function drawCoders() {
-        for (let squad of data.squads) {
-          for (let coder of squad.coders) {
+        for (const squad of Object.values(data.squads)) {
+          for (const coder of Object.values(squad.coders)) {
             let lastPoint = coder.points.at(-1);
             objs.ctx.strokeStyle = coder.color;
             objs.ctx.beginPath();
-            for (let point of coder.points) {
+            for (const point of coder.points) {
               objs.ctx.lineTo(point[0] * objs.size, point[1] * objs.size);
             }
             objs.ctx.stroke();

@@ -57,7 +57,7 @@ export default function serve() {
 
   http
     .createServer(function (req, res) {
-      console.log(`${req.method} ${req.url}`);
+      // console.log(`${req.method} ${req.url}`);
       switch(req.method) {
         case 'POST':
           handlePost(req, res);

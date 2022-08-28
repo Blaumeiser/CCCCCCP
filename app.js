@@ -129,7 +129,7 @@ function sendData(ws) {
   ws.send(JSON.stringify({ full: data }));
 }
 
-function sendUpdates() {
+async function sendUpdates() {
   let diff = [];
 
   data.head = new Date().toISOString();
@@ -169,60 +169,64 @@ function sendUpdates() {
 
   function moveCoderLocal(board, squad, coder) {
     moveCoderStraigth(coder);
-    const lastPoint = coder.points[coder.points.length - 1];
-    diff.push({
-      op: "add",
-      path: `/squads/${squad.name}/coders/${coder.name}/points/-`,
-      value: lastPoint,
-    });
   }
 
-  function moveCoders(board) {
+  async function moveCoders(board) {
     for (const squad of Object.values(data.squads)) {
       for (const coder of Object.values(squad.coders)) {
-        moveCoderLocal(board, squad, coder);
-        //moveCoderRemote(board, squad, coder);
-      }
+        //moveCoderLocal(board, squad, coder);
+        await moveCoderRemote(board, squad, coder);
+
+        const lastPoint = coder.points.slice(-1)[0];
+        diff.push({
+          op: "add",
+          path: `/squads/${squad.id}/coders/${coder.id}/points/-`,
+          value: lastPoint,
+        });
+       }
     }
   }
 
   function moveCoderRemote(board, squad, coder) {
-    const state  =  {
-      coderName: coder.name,
-      board
+    return new Promise((resolve, reject) => {
+      const state  =  {
+        coderName: coder.name,
+        board
+      };
+      const json = JSON.stringify(state);
+      const options = {
+        method: 'POST',
+        timeout: 1000,
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(json)
+      }
     };
-    const json = JSON.stringify(state);
-    const options = {
-      method: 'POST',
-      timeout: 1000,
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(json)
-     }
-  };
-    const url = coder.webhook;
+      const url = coder.webhook;
 
-    const request = https.request(url, options, async (res) => {
-      const buffers = [];
-      for await (const chunk of res) {
-        buffers.push(chunk);
-      }
-      const json = Buffer.concat(buffers).toString();
-      if (json.length) {
-        const obj  = JSON.parse(json);
-        console.log(obj);
-        right(coder, obj.right);
-        forward(coder, obj.forward);
-      }
+      const request = https.request(url, options, async (res) => {
+        const buffers = [];
+        for await (const chunk of res) {
+          buffers.push(chunk);
+        }
+        const json = Buffer.concat(buffers).toString();
+        if (json.length) {
+          const obj  = JSON.parse(json);
+          // console.log(obj);
+          right(coder, obj.right);
+          forward(coder, obj.forward);
+          resolve();
+        }
+      });
+      request.on('timeout', () => {
+        request.destroy();
     });
-    request.on('timeout', () => {
-      request.destroy();
-  });
-  request.on('error', (e) => {
-       // console.error(e);
-    })
-    request.write(json);
-    request.end();
+    request.on('error', (e) => {
+        // console.error(e);
+      })
+      request.write(json);
+      request.end();
+    });
   }
 
   function spawnPineapple() {
@@ -237,7 +241,7 @@ function sendUpdates() {
   }
 
   function ceasePineapple(id) {
-    data.pineapples.splice(id, 1);
+    data.pineapples.slice(id, 1);
     diff.push({
       op: "remove",
       path: `/pineapples/${id}`,
@@ -251,7 +255,7 @@ function sendUpdates() {
   function checkCapture(pinappleId, squad, coder) {
     const pineapple = data.pineapples[pinappleId];
     const posPineapple = pineapple;
-    const coderPoint = coder.points[coder.points.length - 1];
+    const coderPoint = coder.points.slice(-1)[0];
     const distance = Math.hypot(
       posPineapple[0] - coderPoint[0],
       posPineapple[1] - coderPoint[0]
@@ -276,8 +280,10 @@ function sendUpdates() {
   function getPublicBoardState() {
     let obj = {};
     obj.squads = objMap(data.squads, squad => ( {
+      id: squad.id,
       name: squad.name,
       coders : objMap(squad.coders, coder => ({
+        id: coder.id,
         name: coder.name,
         point: coder.points.slice(-1)[0],
         direction: coder.direction
@@ -287,7 +293,7 @@ function sendUpdates() {
   }
 
   const board = getPublicBoardState();
-  moveCoders(board);
+  await moveCoders(board);
   checkCaptures();
   //spawnPineapple();
 
