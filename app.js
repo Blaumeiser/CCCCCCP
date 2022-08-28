@@ -9,8 +9,7 @@ const coder1 =  {
   id: crypto.randomUUID(),
   name: 'jb',
   webhook: "https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io",
-  avatar:
-    "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
+  avatar: "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
 };
 
 const squad1 = {
@@ -21,14 +20,20 @@ const squad1 = {
 
 squad1.coders[coder1.id] = coder1;
 
+const pineapple1 = {
+  id: crypto.randomUUID(),
+  loc: [0.2, 0.2]
+};
+
 const root = {
   freq: 1000,
   segfault: 1000 * 10 * 6,
   squads: { },
-  pineapples: [[0.2, 0.2]],
+  pineapples: {}
 };
 
 root.squads[squad1.id] = squad1;
+root.pineapples[pineapple1.id] = pineapple1;
 
 const root1 = {
   freq: 1000,
@@ -82,9 +87,9 @@ const root1 = {
     },
   },
   pineapples: [
-    [Math.random(), Math.random() * 0.5],
-    [Math.random(), Math.random() * 0.5],
-    [Math.random(), Math.random() * 0.5],
+    {id:'1', loc:[Math.random(), Math.random() * 0.5]},
+    {id:'2', loc:[Math.random(), Math.random() * 0.5]},
+    {id:'3', loc:[Math.random(), Math.random() * 0.5]},
   ],
 };
 
@@ -92,7 +97,7 @@ function objMap(obj, func) {
   return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, func(v)]));
 }
 
-function newCoder(coder) {
+function initializeNewCoder(coder) {
   return {
     avatarSize: 0.01,
     //points: [[Math.random(), Math.random() * 0.25]],
@@ -106,11 +111,12 @@ function newCoder(coder) {
 }
 
 let data = {};
+
 function restart() {
   data = JSON.parse(JSON.stringify(root));
   data.head = new Date().toISOString();
-  Object.values(data.squads).forEach((squad) => (squad.coders = objMap(squad.coders, newCoder)));
-  //data.pineapples = data.pineapples.map(() => [Math.random(), Math.random()]);
+  Object.values(data.squads).forEach((squad) => (squad.coders = objMap(squad.coders, initializeNewCoder)));
+  data.pineapples = objMap(data.pineapples,p => ({id:p.id,loc:[Math.random(), Math.random()]}));
   const json = JSON.stringify({ full: data });
   wss.clients.forEach(function each(client) {
     if (client.readyState === WebSocket.OPEN) {
@@ -130,7 +136,7 @@ function sendData(ws) {
 }
 
 async function sendUpdates() {
-  let diff = [];
+  const diff = [];
 
   data.head = new Date().toISOString();
   diff.push({
@@ -151,39 +157,45 @@ async function sendUpdates() {
   });
 
   function moveCoderStraigth(coder) {
-    const pineapplePoint = data.pineapples[0];
-    const lastPoint = coder.points[coder.points.length - 1];
+    const pineapplePoint = Object.values(data.pineapples).at(0).loc;
+    const lastPoint = coder.points.at(-1);
     const oposite = pineapplePoint[1] - lastPoint[1];
     const adjacent = pineapplePoint[0] - lastPoint[0];
     const dir = Math.atan(oposite / adjacent);
     coder.dir = dir;
     //const dirDiff = coder.dir - dir;
     //right(coder, dirDiff);
-    forward(coder, 0.005);
+    moveCoderForward(coder, 0.005);
   }
 
   function moveCoderRandom(coder) {
-    right(coder, Math.random() * Math.PI * 0.25);
-    forward(coder, Math.random() * 0.005);
+    moveCoderRight(coder, Math.random() * Math.PI * 0.25);
+    moveCoderForward(coder, Math.random() * 0.005);
   }
 
-  function moveCoderLocal(board, squad, coder) {
+  async function moveCoderLocal(board, squad, coder) {
     moveCoderStraigth(coder);
+    return {squad, coder};
   }
 
   async function moveCoders(board) {
+    const arr = [];
     for (const squad of Object.values(data.squads)) {
       for (const coder of Object.values(squad.coders)) {
-        //moveCoderLocal(board, squad, coder);
-        await moveCoderRemote(board, squad, coder);
-
-        const lastPoint = coder.points.slice(-1)[0];
-        diff.push({
-          op: "add",
-          path: `/squads/${squad.id}/coders/${coder.id}/points/-`,
-          value: lastPoint,
-        });
-       }
+        const movePromise = moveCoderLocal(board, squad, coder);
+        //const movePromise = moveCoderRemote(board, squad, coder);
+        arr.push(movePromise);
+      }
+    }
+    await Promise.all(arr);
+    for(const move of arr) {
+      const result  = await move;
+      const lastPoint = result.coder.points.at(-1);
+      diff.push({
+        op: "add",
+        path: `/squads/${result.squad.id}/coders/${result.coder.id}/points/-`,
+        value: lastPoint,
+      });
     }
   }
 
@@ -213,9 +225,9 @@ async function sendUpdates() {
         if (json.length) {
           const obj  = JSON.parse(json);
           // console.log(obj);
-          right(coder, obj.right);
-          forward(coder, obj.forward);
-          resolve();
+          moveCoderRight(coder, obj.right);
+          moveCoderForward(coder, obj.forward);
+          resolve({squad, coder});
         }
       });
       request.on('timeout', () => {
@@ -230,18 +242,20 @@ async function sendUpdates() {
   }
 
   function spawnPineapple() {
-    const newPineapple = [Math.random(), Math.random() * 0.5];
-    data.pineapples.push(newPineapple);
+    const newPineapple = {id: crypto.randomUUID(), loc: [Math.random(), Math.random() * 0.5] };
+    data.pineapples[newPineapple.id] = newPineapple;
+    // console.log('spawnPineapple', Object.keys(data.pineapples));
     diff.push({
       op: "add",
       path: "/pineapples/-",
       value: newPineapple,
     });
-    if (data.pineapples.length >= 10) ceasePineapple(0);
+    if (Object.keys(data.pineapples).length >= 10) ceasePineapple(Object.keys(data.pineapples)[0]);
   }
 
   function ceasePineapple(id) {
-    data.pineapples.slice(id, 1);
+    // console.log('ceasePineapple', Object.keys(data.pineapples));
+    delete data.pineapples[id];
     diff.push({
       op: "remove",
       path: `/pineapples/${id}`,
@@ -252,26 +266,25 @@ async function sendUpdates() {
     // Todo
   }
 
-  function checkCapture(pinappleId, squad, coder) {
-    const pineapple = data.pineapples[pinappleId];
-    const posPineapple = pineapple;
-    const coderPoint = coder.points.slice(-1)[0];
+  function checkCapture(pineapple, squad, coder) {
+    const posPineapple = pineapple.loc;
+    const coderPoint = coder.points.at(-1);
     const distance = Math.hypot(
       posPineapple[0] - coderPoint[0],
       posPineapple[1] - coderPoint[0]
     );
     if (distance < 0.01) {
-      ceasePineapple(pinappleId);
+      ceasePineapple(pineapple.id);
       countCapture(squad, coder);
       spawnPineapple();
     }
   }
 
   function checkCaptures() {
-    for (let p = 0; p < data.pineapples.length; p++) {
+    for (const pineapple of Object.values(data.pineapples)) {
       for (const squad of Object.values(data.squads)) {
         for (const coder of Object.values(squad.coders)) {
-          checkCapture(p, squad, coder);
+          checkCapture(pineapple, squad, coder);
         }
       }
     }
@@ -305,18 +318,18 @@ async function sendUpdates() {
   });
 }
 
-function forward(coder, dist) {
-  const lastPoint = coder.points[coder.points.length - 1];
+function moveCoderForward(coder, dist) {
+  const lastPoint = coder.points.at(-1);
   const x = lastPoint[0] + dist * Math.cos(coder.dir);
   const y = lastPoint[1] + dist * Math.sin(coder.dir);
   coder.points.push([x, y]);
 }
 
-function left(coder, angle) {
+function moveCoderLeft(coder, angle) {
   coder.dir -= angle;
 }
 
-function right(coder, angle) {
+function moveCoderRight(coder, angle) {
   coder.dir += angle;
 }
 

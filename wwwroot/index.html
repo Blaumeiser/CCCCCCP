@@ -75,9 +75,9 @@
         pineappleImg.src =
           "https://upload.wikimedia.org/wikipedia/commons/a/a3/Indian_Election_Symbol_Pineapple.png";
         pineappleImg.onload = function () {
-          for (let pineapple of data.pineapples) {
-              const x = (pineapple[0] - size / 2) * objs.size;
-              const y = (pineapple[1] - size / 2) * objs.size;
+          for (const pineapple of Object.values(data.pineapples)) {
+              const x = (pineapple.loc[0] - size / 2) * objs.size;
+              const y = (pineapple.loc[1] - size / 2) * objs.size;
             objs.ctx.drawImage(
               pineappleImg,
               x,
