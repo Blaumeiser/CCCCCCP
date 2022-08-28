@@ -2,121 +2,19 @@ import { WebSocketServer, WebSocket } from "ws";
 import https from 'node:https';
 import serve from "./serve.js";
 import test from "./test.js";
-import crypto from 'node:crypto';
+import board from "./board.js";
+import pineapple from "./pineapple.js";
 test();
-
-const coder1 =  {
-  id: crypto.randomUUID(),
-  name: 'jb',
-  webhook: "https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io",
-  avatar: "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
-};
-
-const squad1 = {
-  id: crypto.randomUUID(),
-  name: 'Special-projects-Squad',
-  coders: {},
-};
-
-squad1.coders[coder1.id] = coder1;
-
-const pineapple1 = {
-  id: crypto.randomUUID(),
-  loc: [0.2, 0.2]
-};
-
-const root = {
-  freq: 1000,
-  segfault: 1000 * 10 * 6,
-  squads: { },
-  pineapples: {}
-};
-
-root.squads[squad1.id] = squad1;
-root.pineapples[pineapple1.id] = pineapple1;
-
-const root1 = {
-  freq: 1000,
-  segfault: 1000 * 10 * 6,
-  squads: {
-    "Special-Projects-Squad": {
-      name: "Special-Projects-Squad",
-      coders: {
-        '0': {
-          name: '0',
-          avatar:
-            "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
-        },
-        '1':{
-          name: '1',
-          avatar:
-            "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
-        },
-        '2':{
-          name:'2',
-          avatar:
-            "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
-        },
-      },
-    },
-    "VX":{
-      name: "VX",
-      coders: {
-        '3':{
-          name:'3',
-          avatar:
-            "https://www.pngkit.com/png/full/435-4356701_minus-frog-crafts-pond-life-gifs-kermit-the.png",
-        },
-        '4':{
-          name:'4',
-          avatar:
-            "https://www.pngkit.com/png/full/435-4356701_minus-frog-crafts-pond-life-gifs-kermit-the.png",
-        },
-      },
-    },
-    "Aporia":{
-      name: "Aporia",
-      coders: {
-        '5':{
-          name:'5',
-          avatar:
-            "https://static.vecteezy.com/system/resources/thumbnails/000/242/794/small_2x/girl-with-wavy-hair-and-glasses.jpg",
-          avatarSize: 0.02,
-        },
-      },
-    },
-  },
-  pineapples: [
-    {id:'1', loc:[Math.random(), Math.random() * 0.5]},
-    {id:'2', loc:[Math.random(), Math.random() * 0.5]},
-    {id:'3', loc:[Math.random(), Math.random() * 0.5]},
-  ],
-};
 
 function objMap(obj, func) {
   return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, func(v)]));
 }
 
-function initializeNewCoder(coder) {
-  return {
-    avatarSize: 0.01,
-    //points: [[Math.random(), Math.random() * 0.25]],
-    points: [[0.1, 0.1]],
-    dir: Math.random() * Math.PI * 2,
-    color:
-      "#" +
-      ("00000" + ((Math.random() * (1 << 24)) | 0).toString(16)).slice(-6),
-    ...coder,
-  };
-}
-
 let data = {};
 
 function restart() {
-  data = JSON.parse(JSON.stringify(root));
+  data = board.create();
   data.head = new Date().toISOString();
-  Object.values(data.squads).forEach((squad) => (squad.coders = objMap(squad.coders, initializeNewCoder)));
-  data.pineapples = objMap(data.pineapples,p => ({id:p.id,loc:[Math.random(), Math.random()]}));
   const json = JSON.stringify({ full: data });
   wss.clients.forEach(function each(client) {
     if (client.readyState === WebSocket.OPEN) {
@@ -159,8 +57,8 @@ async function sendUpdates() {
   function moveCoderStraigth(coder) {
     const pineapplePoint = Object.values(data.pineapples).at(0).loc;
     const lastPoint = coder.points.at(-1);
-    const oposite = pineapplePoint[1] - lastPoint[1];
-    const adjacent = pineapplePoint[0] - lastPoint[0];
+    const oposite = pineapplePoint[1] - lastPoint.loc[1];
+    const adjacent = pineapplePoint[0] - lastPoint.loc[0];
     const dir = Math.atan(oposite / adjacent);
     coder.dir = dir;
     //const dirDiff = coder.dir - dir;
@@ -270,8 +168,8 @@ async function sendUpdates() {
     const posPineapple = pineapple.loc;
     const coderPoint = coder.points.at(-1);
     const distance = Math.hypot(
-      posPineapple[0] - coderPoint[0],
-      posPineapple[1] - coderPoint[0]
+      posPineapple[0] - coderPoint.loc[0],
+      posPineapple[1] - coderPoint.loc[1]
     );
     if (distance < 0.01) {
       ceasePineapple(pineapple.id);
@@ -298,7 +196,7 @@ async function sendUpdates() {
       coders : objMap(squad.coders, coder => ({
         id: coder.id,
         name: coder.name,
-        point: coder.points.slice(-1)[0],
+        point: coder.points.at(-1),
         direction: coder.direction
       }))
     }));
@@ -320,9 +218,9 @@ async function sendUpdates() {
 
 function moveCoderForward(coder, dist) {
   const lastPoint = coder.points.at(-1);
-  const x = lastPoint[0] + dist * Math.cos(coder.dir);
-  const y = lastPoint[1] + dist * Math.sin(coder.dir);
-  coder.points.push([x, y]);
+  const x = lastPoint.loc[0] + dist * Math.cos(coder.dir);
+  const y = lastPoint.loc[1] + dist * Math.sin(coder.dir);
+  coder.points.push({loc:[x, y]});
 }
 
 function moveCoderLeft(coder, angle) {

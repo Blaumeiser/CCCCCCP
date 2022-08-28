@@ -51,7 +51,7 @@
             objs.ctx.strokeStyle = coder.color;
             objs.ctx.beginPath();
             for (const point of coder.points) {
-              objs.ctx.lineTo(point[0] * objs.size, point[1] * objs.size);
+              objs.ctx.lineTo(point.loc[0] * objs.size, point.loc[1] * objs.size);
             }
             objs.ctx.stroke();
 
@@ -59,8 +59,8 @@
             img.onload = function () {
               objs.ctx.drawImage(
                 img,
-                (lastPoint[0] - coder.avatarSize / 2) * objs.size,
-                (lastPoint[1] - coder.avatarSize / 2) * objs.size,
+                (lastPoint.loc[0] - coder.avatarSize / 2) * objs.size,
+                (lastPoint.loc[1] - coder.avatarSize / 2) * objs.size,
                 coder.avatarSize * objs.size,
                 coder.avatarSize * objs.size
               );
