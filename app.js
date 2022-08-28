@@ -2,71 +2,85 @@ import { WebSocketServer, WebSocket } from "ws";
 import https from 'node:https';
 import serve from "./serve.js";
 import test from "./test.js";
-//test();
+import crypto from 'node:crypto';
+test();
+
+const coder1 =  {
+  id: crypto.randomUUID(),
+  name: 'jb',
+  webhook: "https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io",
+  avatar:
+    "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
+};
+
+const squad1 = {
+  id: crypto.randomUUID(),
+  name: 'Special-projects-Squad',
+  coders: {},
+};
+
+squad1.coders[coder1.id] = coder1;
 
 const root = {
   freq: 1000,
   segfault: 1000 * 10 * 6,
-  squads: [
-    {
-      name: "Special-Projects-Squad",
-      coders: [
-        {
-          webhook: "https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io",
-          avatar:
-            "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
-        },
-      ],
-    },
-  ],
+  squads: { },
   pineapples: [[0.2, 0.2]],
 };
+
+root.squads[squad1.id] = squad1;
 
 const root1 = {
   freq: 1000,
   segfault: 1000 * 10 * 6,
-  squads: [
-    {
+  squads: {
+    "Special-Projects-Squad": {
       name: "Special-Projects-Squad",
-      coders: [
-        {
+      coders: {
+        '0': {
+          name: '0',
           avatar:
             "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
         },
-        {
+        '1':{
+          name: '1',
           avatar:
             "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
         },
-        {
+        '2':{
+          name:'2',
           avatar:
             "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
         },
-      ],
+      },
     },
-    {
+    "VX":{
       name: "VX",
-      coders: [
-        {
+      coders: {
+        '3':{
+          name:'3',
           avatar:
             "https://www.pngkit.com/png/full/435-4356701_minus-frog-crafts-pond-life-gifs-kermit-the.png",
         },
-        {
+        '4':{
+          name:'4',
           avatar:
             "https://www.pngkit.com/png/full/435-4356701_minus-frog-crafts-pond-life-gifs-kermit-the.png",
         },
-      ],
+      },
     },
-    {
+    "Aporia":{
       name: "Aporia",
-      coders: [
-        {
+      coders: {
+        '5':{
+          name:'5',
           avatar:
             "https://static.vecteezy.com/system/resources/thumbnails/000/242/794/small_2x/girl-with-wavy-hair-and-glasses.jpg",
           avatarSize: 0.02,
         },
-      ],
+      },
     },
-  ],
+  },
   pineapples: [
     [Math.random(), Math.random() * 0.5],
     [Math.random(), Math.random() * 0.5],
@@ -74,9 +88,12 @@ const root1 = {
   ],
 };
 
-function newCoder(avatar) {
+function objMap(obj, func) {
+  return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, func(v)]));
+}
+
+function newCoder(coder) {
   return {
-    name: ""+ (Math.random()*(1<<24) | 0).toString(10),
     avatarSize: 0.01,
     //points: [[Math.random(), Math.random() * 0.25]],
     points: [[0.1, 0.1]],
@@ -84,7 +101,7 @@ function newCoder(avatar) {
     color:
       "#" +
       ("00000" + ((Math.random() * (1 << 24)) | 0).toString(16)).slice(-6),
-    ...avatar,
+    ...coder,
   };
 }
 
@@ -92,7 +109,7 @@ let data = {};
 function restart() {
   data = JSON.parse(JSON.stringify(root));
   data.head = new Date().toISOString();
-  data.squads.forEach((squad) => (squad.coders = squad.coders.map(newCoder)));
+  Object.values(data.squads).forEach((squad) => (squad.coders = objMap(squad.coders, newCoder)));
   //data.pineapples = data.pineapples.map(() => [Math.random(), Math.random()]);
   const json = JSON.stringify({ full: data });
   wss.clients.forEach(function each(client) {
@@ -150,20 +167,21 @@ function sendUpdates() {
     forward(coder, Math.random() * 0.005);
   }
 
-  function moveCoderlocal(board, squad, coder) {
+  function moveCoderLocal(board, squad, coder) {
     moveCoderStraigth(coder);
     const lastPoint = coder.points[coder.points.length - 1];
     diff.push({
       op: "add",
-      path: `/squads/${squadId}/coders/${coderId}/points/-`,
+      path: `/squads/${squad.name}/coders/${coder.name}/points/-`,
       value: lastPoint,
     });
   }
 
   function moveCoders(board) {
-    for (const squad of data.squads) {
-      for (const coder of squad.coders) {
-        moveCoderRemote(board, squad, coder);
+    for (const squad of Object.values(data.squads)) {
+      for (const coder of Object.values(squad.coders)) {
+        moveCoderLocal(board, squad, coder);
+        //moveCoderRemote(board, squad, coder);
       }
     }
   }
@@ -226,16 +244,12 @@ function sendUpdates() {
     });
   }
 
-  function countCapture(squadId, coderId) {
-    const squad = data.squads[squadId];
-    const coder = squad.coders[coderId];
+  function countCapture(squad, coder) {
     // Todo
   }
 
-  function checkCapture(pinappleId, squadId, coderId) {
+  function checkCapture(pinappleId, squad, coder) {
     const pineapple = data.pineapples[pinappleId];
-    const squad = data.squads[squadId];
-    const coder = squad.coders[coderId];
     const posPineapple = pineapple;
     const coderPoint = coder.points[coder.points.length - 1];
     const distance = Math.hypot(
@@ -244,17 +258,16 @@ function sendUpdates() {
     );
     if (distance < 0.01) {
       ceasePineapple(pinappleId);
-      countCapture(squadId, coderId);
+      countCapture(squad, coder);
       spawnPineapple();
     }
   }
 
   function checkCaptures() {
     for (let p = 0; p < data.pineapples.length; p++) {
-      for (let i = 0; i < data.squads.length; i++) {
-        const squad = data.squads[i];
-        for (let j = 0; j < squad.coders.length; j++) {
-          checkCapture(p, i, j);
+      for (const squad of Object.values(data.squads)) {
+        for (const coder of Object.values(squad.coders)) {
+          checkCapture(p, squad, coder);
         }
       }
     }
@@ -262,9 +275,9 @@ function sendUpdates() {
 
   function getPublicBoardState() {
     let obj = {};
-    obj.squads = data.squads.map(squad => ( {
+    obj.squads = objMap(data.squads, squad => ( {
       name: squad.name,
-      coders : squad.coders.map(coder => ({
+      coders : objMap(squad.coders, coder => ({
         name: coder.name,
         point: coder.points.slice(-1)[0],
         direction: coder.direction

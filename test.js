@@ -2,17 +2,15 @@ import rfc6902 from "rfc6902";
 
 export default function test() {
   let data = {
-    arr: [
-      [Math.random(), Math.random() * 0.5],
-      [Math.random(), Math.random() * 0.5],
-      [Math.random(), Math.random() * 0.5],
-    ],
+    a: {name:'a'}
   };
 
-  let data2 = JSON.parse(JSON.stringify(data));
-  data2.arr.splice(1, 1);
-  data2.arr.push([Math.random(), Math.random() * 0.5]);
+  const json = JSON.stringify(data);
+  const data2 = JSON.parse(json);
 
+  data2.b = {name:'b'};
+  data2.a.sub=22;
+  data2.a.name = 'aa';
   const patch = rfc6902.createPatch(data, data2);
-  console.log(patch);
+  //console.log(patch);
 }
