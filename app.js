@@ -12,6 +12,7 @@ const root = {
       name: "Special-Projects-Squad",
       coders: [
         {
+          webhook: "https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io",
           avatar:
             "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
         },
@@ -149,9 +150,7 @@ function sendUpdates() {
     forward(coder, Math.random() * 0.005);
   }
 
-  function moveCoder(squadId, coderId) {
-    const squad = data.squads[squadId];
-    const coder = squad.coders[coderId];
+  function moveCoderlocal(board, squad, coder) {
     moveCoderStraigth(coder);
     const lastPoint = coder.points[coder.points.length - 1];
     diff.push({
@@ -161,25 +160,29 @@ function sendUpdates() {
     });
   }
 
-  function moveCodersLocal(board) {
-    for (let i = 0; i < data.squads.length; i++) {
-      for (let j = 0; j < data.squads[i].coders.length; j++) {
-        moveCoder(i, j);
+  function moveCoders(board) {
+    for (const squad of data.squads) {
+      for (const coder of squad.coders) {
+        moveCoderRemote(board, squad, coder);
       }
     }
   }
 
-  function moveCodersRemote(board) {
-    const json = JSON.stringify(board);
+  function moveCoderRemote(board, squad, coder) {
+    const state  =  {
+      coderName: coder.name,
+      board
+    };
+    const json = JSON.stringify(state);
     const options = {
       method: 'POST',
-      timeout: 3000,
+      timeout: 1000,
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(json)
      }
   };
-    const url = new URL("https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io");
+    const url = coder.webhook;
 
     const request = https.request(url, options, async (res) => {
       const buffers = [];
@@ -189,10 +192,9 @@ function sendUpdates() {
       const json = Buffer.concat(buffers).toString();
       if (json.length) {
         const obj  = JSON.parse(json);
-        obj.forEach(t => {
-         // const coders = data.squads.map(s=>s.coders);
-        });
         console.log(obj);
+        right(coder, obj.right);
+        forward(coder, obj.forward);
       }
     });
     request.on('timeout', () => {
@@ -203,11 +205,6 @@ function sendUpdates() {
     })
     request.write(json);
     request.end();
-  }
-
-  function moveCoders(board) {
-    moveCodersLocal(board);
-    moveCodersRemote(board);
   }
 
   function spawnPineapple() {

@@ -42,12 +42,13 @@ async function handlePost(req, res) {
   const json = Buffer.concat(buffers).toString();
   const obj = JSON.parse(json);
   //console.log(obj);
-  const ownSquad = obj.squads.find(s => s.name==='Special-Projects-Squad');
-  const turns = ownSquad.coders.map(c=>( {
-    name: c.name,
-    turn: Math.random()*Math.PI/10
-  }));
-  const retJson = JSON.stringify();
+  const right = Math.random() * Math.PI * 0.25;
+  const forward =  Math.random() * 0.005;
+  const ret = {
+    right,
+    forward
+  };
+  const retJson = JSON.stringify(ret);
   res.end(retJson);
 }
 
