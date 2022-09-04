@@ -52,8 +52,8 @@ async function handlePost(req, res) {
   res.end(retJson);
 }
 
-export default function serve() {
-  const port = 9000;
+function serve(p) {
+  const port = p || 9000;
 
   http
     .createServer(function (req, res) {
@@ -69,5 +69,7 @@ export default function serve() {
     })
     .listen(parseInt(port));
 
-  console.log(`Server listening on port ${port}`);
+  console.log(`HTTP-Server listening on port ${port}`);
 }
+
+export default {serve};

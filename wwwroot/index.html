@@ -51,7 +51,10 @@
             objs.ctx.strokeStyle = coder.color;
             objs.ctx.beginPath();
             for (const point of coder.points) {
-              objs.ctx.lineTo(point.loc[0] * objs.size, point.loc[1] * objs.size);
+              objs.ctx.lineTo(
+                point.loc[0] * objs.size,
+                point.loc[1] * objs.size
+              );
             }
             objs.ctx.stroke();
 
@@ -76,8 +79,8 @@
           "https://upload.wikimedia.org/wikipedia/commons/a/a3/Indian_Election_Symbol_Pineapple.png";
         pineappleImg.onload = function () {
           for (const pineapple of Object.values(data.pineapples)) {
-              const x = (pineapple.loc[0] - size / 2) * objs.size;
-              const y = (pineapple.loc[1] - size / 2) * objs.size;
+            const x = (pineapple.loc[0] - size / 2) * objs.size;
+            const y = (pineapple.loc[1] - size / 2) * objs.size;
             objs.ctx.drawImage(
               pineappleImg,
               x,
@@ -112,21 +115,18 @@
       let ws;
       function startWs() {
         if (!!ws) ws.close();
-        const wsurl1 =
+        const wsurl =
           "ws" +
           (window.location.protocol === "http:" ? "" : "s") +
           "://" +
           window.location.hostname +
           ":8080";
-        const wsurl = "wss://8080-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io/";
+        const wsurl1 =
+          "wss://8080-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io/";
         ws = new WebSocket(wsurl);
         ws.onmessage = (msg) => {
           const patch = JSON.parse(msg.data);
-          if (patch.diff) {
-            rfc6902.applyPatch(data, patch.diff);
-          } else {
-            data = patch.full;
-          }
+          rfc6902.applyPatch(data, patch);
           draw();
         };
         ws.onerror = console.error;

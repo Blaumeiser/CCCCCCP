@@ -1,16 +1,14 @@
-import rfc6902 from "rfc6902";
+import * as jsonpatch from "fast-json-patch/index.mjs";
 
 export default function test() {
-  let data = {
-    a: {name:'a'}
+  var document = {
+    firstName: "Joachim",
+    lastName: "Wester",
+    contactDetails: { phoneNumbers: [{ number: "555-123" }] },
   };
-
-  const json = JSON.stringify(data);
-  const data2 = JSON.parse(json);
-
-  data2.b = {name:'b'};
-  data2.a.sub=22;
-  data2.a.name = 'aa';
-  const patch = rfc6902.createPatch(data, data2);
-  //console.log(patch);
+  var observer = jsonpatch.observe(document);
+  document.firstName = "Albert";
+  document.contactDetails.phoneNumbers[0].number = "123";
+  document.contactDetails.phoneNumbers.push({ number: "456" });
+  var patch = jsonpatch.generate(observer);
 }
