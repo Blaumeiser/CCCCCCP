@@ -4,26 +4,23 @@ import https from "node:https";
 function moveCoderStraigth(publicBoard, squad, coder) {
   const pineapplePoint = Object.values(publicBoard.pineapples).at(0).loc;
   const lastPoint = coder.points.at(-1);
-  const oposite = pineapplePoint[1] - lastPoint.loc[1];
-  const adjacent = pineapplePoint[0] - lastPoint.loc[0];
-  const dir = Math.atan(oposite / adjacent);
-  coder.dir = dir;
-  //const dirDiff = coder.dir - dir;
-  //right(coder, dirDiff);
-  moveCoderForward(coder, 0.005);
-  return Promise.resolve();
+  const deltaX = pineapplePoint[0] - lastPoint.loc[0];
+  const deltaY = pineapplePoint[1] - lastPoint.loc[1];
+  const dir = Math.atan2(deltaY, deltaX);
+  let dirDiff = dir - coder.dir;
+  if (dirDiff < -Math.PI) dirDiff += 2 * Math.PI;
+  return Promise.resolve({ right: dirDiff });
 }
 
-function moveCoderRandom(publicBoard, squad, coder) {
-  moveCoderRight(coder, Math.random() * Math.PI * 0.25);
-  moveCoderForward(coder, Math.random() * 0.005);
-  return Promise.resolve();
+function moveCoderRandom() {
+  return Promise.resolve({ right: Math.random() * Math.PI * 0.25 });
 }
 
 function moveCoderRemote(publicBoard, squad, coder) {
   return new Promise((resolve, reject) => {
     const state = {
-      coderName: coder.name,
+      squadId2Move: squad.id,
+      coderId2Move: coder.id,
       board: publicBoard,
     };
     const json = JSON.stringify(state);
@@ -35,9 +32,8 @@ function moveCoderRemote(publicBoard, squad, coder) {
         "Content-Length": Buffer.byteLength(json),
       },
     };
-    const url = coder.webhook;
 
-    const request = https.request(url, options, async (res) => {
+    const request = https.request(coder.webhook, options, async (res) => {
       const buffers = [];
       for await (const chunk of res) {
         buffers.push(chunk);
@@ -45,10 +41,7 @@ function moveCoderRemote(publicBoard, squad, coder) {
       const json = Buffer.concat(buffers).toString();
       if (json.length) {
         const obj = JSON.parse(json);
-        // console.log(obj);
-        moveCoderRight(coder, obj.right);
-        moveCoderForward(coder, obj.forward);
-        resolve();
+        resolve(obj);
       }
     });
     request.on("timeout", () => {
@@ -83,9 +76,17 @@ async function moveCoders(board) {
   for (const squad of Object.values(board.squads)) {
     for (const coder of Object.values(squad.coders)) {
       const movePromise = moveCoderStraigth(publicBoard, squad, coder);
-      //const movePromise = moveCoderRandom(publicBoard, squad, coder);
+      //const movePromise = moveCoderRandom();
       //const movePromise = moveCoderRemote(publicBoard, squad, coder);
-      arr.push(movePromise);
+      const p = movePromise.then((move) => {
+        const maxDirDiff = publicBoard.maxDirDiff;
+        let right = move.right || 0;
+        if (right > maxDirDiff) right = maxDirDiff;
+        else if (right < -maxDirDiff) right = -maxDirDiff;
+        moveCoderRight(coder, right);
+        moveCoderForward(coder, publicBoard.forwardStep);
+      });
+      arr.push(p);
     }
   }
   await Promise.all(arr);

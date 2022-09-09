@@ -1,23 +1,26 @@
 import boards from "./boards.js";
 import move from "./move.js";
 import httpServe from "./serve.js";
-import ws from "./servews.js";
+import wsServe from "./servews.js";
 import test from "./test.js";
 import captures from "./captures.js";
 import pineapples from "./pineapples.js";
 
 test();
 
-const board = {};
+const world = {};
 
 function restart() {
-  Object.assign(board, boards.createNewBoard());
+  if (!!world.boardId) delete world[world.boardId];
+  const newBoard = boards.createNewBoard();
+  world.boardId = newBoard.id;
+  world[world.boardId] = newBoard;
 }
 
 async function sendUpdates() {
+  const board = world[world.boardId];
   board.head = new Date().toISOString();
-  board.segfault -= board.freq;
-  if (board.segfault <= 0) {
+  if (board.gamestart + board.segfaultingIn <= new Date().getTime()) {
     restart();
   }
   await move.moveCoders(board);
@@ -26,6 +29,6 @@ async function sendUpdates() {
 }
 
 httpServe.serve();
-ws.startWebsocket(board);
+wsServe.startWebsocket(world);
 restart();
-setInterval(sendUpdates, board.freq);
+setInterval(sendUpdates, world[world.boardId].freq);

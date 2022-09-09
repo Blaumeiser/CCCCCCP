@@ -8,7 +8,8 @@ function createNewBoard() {
   const coder1 = {
     id: crypto.randomUUID(),
     name: "jb",
-    webhook: "https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io",
+    webhook: "https://localhost:9000",
+    //webhook: "https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io",
     avatar:
       "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
   };
@@ -26,17 +27,20 @@ function createNewBoard() {
     loc: [0.2, 0.2],
   };
 
-  const root = {
+  const board = {
     id: crypto.randomUUID(),
     freq: 1000,
-    segfault: 1000 * 10 * 6,
+    gamestart: new Date().getTime(),
+    segfaultingIn: 1000 * 60,
     squads: {},
     pineapples: {},
     head: new Date().toISOString(),
+    maxDirDiff: Math.PI / 8,
+    forwardStep: 0.005,
   };
 
-  root.squads[squad1.id] = squad1;
-  root.pineapples[pineapple1.id] = pineapple1;
+  board.squads[squad1.id] = squad1;
+  board.pineapples[pineapple1.id] = pineapple1;
 
   const root1 = {
     id: crypto.randomUUID(),
@@ -100,7 +104,7 @@ function createNewBoard() {
   //Object.values(data.squads).forEach((squad) => (squad.coders = objMap(squad.coders, initializeNewCoder)));
   //data.pineapples = objMap(data.pineapples,p => ({id:p.id,loc:[Math.random(), Math.random()]}));
 
-  return root;
+  return board;
 }
 
 function initializeNewCoder(coder) {
@@ -108,7 +112,7 @@ function initializeNewCoder(coder) {
     avatarSize: 0.01,
     //points: [ {loc:[Math.random(), Math.random() * 0.25]}],
     points: [{ loc: [0.1, 0.1] }],
-    dir: Math.random() * Math.PI * 2,
+    dir: (Math.PI / 2) * 3, //Math.random() * Math.PI * 2,
     color:
       "#" +
       ("00000" + ((Math.random() * (1 << 24)) | 0).toString(16)).slice(-6),
@@ -119,6 +123,8 @@ function initializeNewCoder(coder) {
 function getPublicBoardState(board) {
   const publicBoard = {
     id: board.id,
+    maxDirDiff: board.maxDirDiff,
+    forwardStep: board.forwardStep,
     pineapples: board.pineapples,
     squads: objMap(board.squads, (squad) => ({
       id: squad.id,

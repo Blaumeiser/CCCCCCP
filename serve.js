@@ -40,13 +40,18 @@ async function handlePost(req, res) {
     buffers.push(chunk);
   }
   const json = Buffer.concat(buffers).toString();
-  const obj = JSON.parse(json);
-  //console.log(obj);
+  const publicBoard = JSON.parse(json);
+  console.log(publicBoard);
+  const pineapplePoint = Object.values(publicBoard.pineapples).at(0).loc;
+  const lastPoint = coder.points.at(-1);
+  const deltaX = pineapplePoint[0] - lastPoint.loc[0];
+  const deltaY = pineapplePoint[1] - lastPoint.loc[1];
+  const dir = Math.atan2(deltaY, deltaX);
+  coder.dir = dir;
+
   const right = Math.random() * Math.PI * 0.25;
-  const forward =  Math.random() * 0.005;
   const ret = {
     right,
-    forward
   };
   const retJson = JSON.stringify(ret);
   res.end(retJson);
@@ -58,18 +63,18 @@ function serve(p) {
   http
     .createServer(function (req, res) {
       // console.log(`${req.method} ${req.url}`);
-      switch(req.method) {
-        case 'POST':
+      switch (req.method) {
+        case "POST":
           handlePost(req, res);
           break;
-        case 'GET':
+        case "GET":
           handleGet(req, res);
           break;
-        }
+      }
     })
     .listen(parseInt(port));
 
   console.log(`HTTP-Server listening on port ${port}`);
 }
 
-export default {serve};
+export default { serve };

@@ -14,37 +14,43 @@
     ></script>
     <script type="text/javascript">
       let objs = {};
-      let data = {};
+      let world = {};
 
       function drawHeader() {
-        const ctx = objs.ctx;
-        const fontSize = objs.size / 75;
-        ctx.font = fontSize + "px monospace";
-        const txt = `${data.head || ""} segfaulting: ${Math.trunc(
-          data.segfault
-        )} ms`;
-        var textSize = ctx.measureText(txt);
-        ctx.clearRect(
-          objs.headOffset,
-          0,
-          textSize.width + objs.size / 2500,
-          textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent + 1
-        );
-        ctx.fillText(txt, objs.headOffset, fontSize);
-        objs.headOffset -= objs.size / 2500;
-        if (objs.headOffset < -textSize.width) {
-          objs.headOffset = objs.size;
+        if (world.boardId) {
+          const data = world[world.boardId];
+          const ctx = objs.ctx;
+          const fontSize = objs.size / 75;
+          ctx.font = fontSize + "px monospace";
+          const segfaulting = Math.max(
+            data.gamestart + data.segfaultingIn - new Date().getTime(),
+            0
+          );
+          const txt = `${data.head || ""} segfaulting: ${segfaulting} ms`;
+          var textSize = ctx.measureText(txt);
+          ctx.clearRect(
+            objs.headOffset,
+            0,
+            textSize.width + objs.size / 2500,
+            textSize.fontBoundingBoxAscent + textSize.fontBoundingBoxDescent + 1
+          );
+          ctx.fillText(txt, objs.headOffset, fontSize);
+          objs.headOffset -= objs.size / 2500;
+          if (objs.headOffset < -textSize.width) {
+            objs.headOffset = objs.size;
+          }
         }
         window.requestAnimationFrame(drawHeader);
       }
 
       function draw() {
+        const data = world[world.boardId];
         objs.ctx.clearRect(0, 0, objs.ctx.canvas.width, objs.ctx.canvas.height);
-        drawCoders();
-        drawPineapples();
+        drawCoders(data);
+        drawPineapples(data);
         drawLogo();
       }
-      function drawCoders() {
+      function drawCoders(data) {
         for (const squad of Object.values(data.squads)) {
           for (const coder of Object.values(squad.coders)) {
             let lastPoint = coder.points.at(-1);
@@ -72,7 +78,7 @@
           }
         }
       }
-      function drawPineapples() {
+      function drawPineapples(data) {
         const size = 0.02;
         const pineappleImg = new Image(size * objs.size, size * objs.size);
         pineappleImg.src =
@@ -126,7 +132,7 @@
         ws = new WebSocket(wsurl);
         ws.onmessage = (msg) => {
           const patch = JSON.parse(msg.data);
-          rfc6902.applyPatch(data, patch);
+          rfc6902.applyPatch(world, patch);
           draw();
         };
         ws.onerror = console.error;
