@@ -5,6 +5,7 @@ function objMap(obj, func) {
 }
 
 function createNewBoard() {
+  return createRandomBoard();
   const coder1 = {
     id: crypto.randomUUID(),
     name: "jb",
@@ -24,7 +25,7 @@ function createNewBoard() {
 
   const pineapple1 = {
     id: crypto.randomUUID(),
-    loc: [0.2, 0.2],
+    loc: [Math.random(), Math.random()],
   };
 
   const board = {
@@ -110,14 +111,62 @@ function createNewBoard() {
 function initializeNewCoder(coder) {
   return {
     avatarSize: 0.01,
-    //points: [ {loc:[Math.random(), Math.random() * 0.25]}],
-    points: [{ loc: [0.1, 0.1] }],
-    dir: (Math.PI / 2) * 3, //Math.random() * Math.PI * 2,
+    points: [{ loc: [Math.random(), Math.random()] }],
+    dir: (Math.random() - 0.5) * Math.PI * 2,
     color:
       "#" +
       ("00000" + ((Math.random() * (1 << 24)) | 0).toString(16)).slice(-6),
     ...coder,
   };
+}
+
+function createRandomBoard() {
+  const numCoders = 4;
+  const numSquads = 3;
+  const numPineapples = 3;
+
+  const board = {
+    id: crypto.randomUUID(),
+    freq: 1000,
+    gamestart: new Date().getTime(),
+    segfaultingIn: 1000 * 60,
+    squads: {},
+    pineapples: {},
+    head: new Date().toISOString(),
+    maxDirDiff: Math.PI / 8,
+    forwardStep: 0.005,
+  };
+
+  for (let s = 0; s < numSquads; s++) {
+    const squad = {
+      id: crypto.randomUUID(),
+      name: "Special-projects-Squad",
+      coders: {},
+    };
+    board.squads[squad.id] = squad;
+
+    for (let c = 0; c < numCoders; c++) {
+      const coder = {
+        id: crypto.randomUUID(),
+        name: "jb",
+        webhook: "https://localhost:9000",
+        //webhook: "https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io",
+        avatar:
+          "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
+      };
+
+      squad.coders[coder.id] = initializeNewCoder(coder);
+    }
+  }
+
+  for (let p = 0; p < numPineapples; p++) {
+    const pineapple = {
+      id: crypto.randomUUID(),
+      loc: [Math.random(), Math.random()],
+    };
+    board.pineapples[pineapple.id] = pineapple;
+  }
+  return board;
 }
 
 function getPublicBoardState(board) {
