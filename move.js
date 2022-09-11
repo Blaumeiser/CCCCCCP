@@ -9,6 +9,7 @@ function moveCoderStraigth(publicBoard, squad, coder) {
   const dir = Math.atan2(deltaY, deltaX);
   let dirDiff = dir - coder.dir;
   if (dirDiff < -Math.PI) dirDiff += 2 * Math.PI;
+  if (dirDiff > Math.PI) dirDiff -= 2 * Math.PI;
   return Promise.resolve({ right: dirDiff });
 }
 
@@ -75,9 +76,9 @@ async function moveCoders(board) {
   const arr = [];
   for (const squad of Object.values(board.squads)) {
     for (const coder of Object.values(squad.coders)) {
-      const movePromise = moveCoderStraigth(publicBoard, squad, coder);
+      //const movePromise = moveCoderStraigth(publicBoard, squad, coder);
       //const movePromise = moveCoderRandom();
-      //const movePromise = moveCoderRemote(publicBoard, squad, coder);
+      const movePromise = moveCoderRemote(publicBoard, squad, coder);
       const p = movePromise.then((move) => {
         const maxDirDiff = publicBoard.maxDirDiff;
         let right = move.right || 0;

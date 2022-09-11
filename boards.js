@@ -5,12 +5,12 @@ function objMap(obj, func) {
 }
 
 function createNewBoard() {
-  return createRandomBoard();
+  //return createRandomBoard();
   const coder1 = {
     id: crypto.randomUUID(),
     name: "jb",
-    webhook: "https://localhost:9000",
-    //webhook: "https://9000-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io",
+    //webhook: "https://localhost:9000",
+    webhook: "https://9000-blaumeiser-ccccccp-x3mpxg6wlan.ws-eu64.gitpod.io/",
     avatar:
       "https://www.pngkit.com/png/full/365-3654764_cristiano-ronaldo-icon-soccer-player-icon.png",
   };
@@ -182,7 +182,7 @@ function getPublicBoardState(board) {
         id: coder.id,
         name: coder.name,
         point: coder.points.at(-1),
-        direction: coder.direction,
+        dir: coder.dir,
       })),
     })),
   };

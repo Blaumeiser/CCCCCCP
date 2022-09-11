@@ -41,17 +41,19 @@ async function handlePost(req, res) {
   }
   const json = Buffer.concat(buffers).toString();
   const publicBoard = JSON.parse(json);
-  console.log(publicBoard);
-  const pineapplePoint = Object.values(publicBoard.pineapples).at(0).loc;
-  const lastPoint = coder.points.at(-1);
-  const deltaX = pineapplePoint[0] - lastPoint.loc[0];
-  const deltaY = pineapplePoint[1] - lastPoint.loc[1];
+  const squad = publicBoard.board.squads[publicBoard.squadId2Move];
+  const coder = squad.coders[publicBoard.coderId2Move];
+  const pineapplePoint = Object.values(publicBoard.board.pineapples).at(0);
+  const lastPoint = coder.point;
+  const deltaX = pineapplePoint.loc[0] - lastPoint.loc[0];
+  const deltaY = pineapplePoint.loc[1] - lastPoint.loc[1];
   const dir = Math.atan2(deltaY, deltaX);
-  coder.dir = dir;
+  let dirDiff = dir - coder.dir;
+  if (dirDiff < -Math.PI) dirDiff += 2 * Math.PI;
+  if (dirDiff > Math.PI) dirDiff -= 2 * Math.PI;
 
-  const right = Math.random() * Math.PI * 0.25;
   const ret = {
-    right,
+    right: dirDiff
   };
   const retJson = JSON.stringify(ret);
   res.end(retJson);

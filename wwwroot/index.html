@@ -121,14 +121,14 @@
       let ws;
       function startWs() {
         if (!!ws) ws.close();
-        const wsurl =
+        const wsurl1 =
           "ws" +
           (window.location.protocol === "http:" ? "" : "s") +
           "://" +
           window.location.hostname +
           ":8080";
-        const wsurl1 =
-          "wss://8080-blaumeiser-ccccccp-g8by99q83g4.ws-eu63.gitpod.io/";
+        const wsurl =
+          "wss://8080-blaumeiser-ccccccp-x3mpxg6wlan.ws-eu64.gitpod.io/";
         ws = new WebSocket(wsurl);
         ws.onmessage = (msg) => {
           const patch = JSON.parse(msg.data);
